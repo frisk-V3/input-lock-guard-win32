@@ -3,19 +3,31 @@ name: build-windows
 on:
   push:
     branches: [ main ]
+  pull_request:
+    branches: [ main ]
 
 jobs:
   build:
     runs-on: windows-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-      - name: Setup MSBuild
-        uses: microsoft/setup-msbuild@v1.1
+      - name: Configure CMake
+        # -B build でビルド用ディレクトリを作成
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Release
 
-      - name: Configure
-        run: cmake -B build
+      - name: Build Project
+        # --config Release でリリースビルドを実行
+        run: cmake --build build --config Release --parallel
 
-      - name: Build
-        run: cmake --build build --config Release
+      - name: Upload Build Artifact
+        # ビルドされた .exe ファイルを保存してダウンロード可能にする
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-executables
+          # build/Release フォルダ内のすべての .exe を対象にする設定
+          path: build/Release/*.exe
+          # フォルダが見つからなかった場合にエラーにする設定（デバッグ用）
+          if-no-files-found: error
